@@ -1,0 +1,158 @@
+{
+  "files.eol": "\n", // 文件结束符
+  "eslint.format.enable": true, // 开启保存时自动修复
+  "editor.codeLens": true, // 显示行号
+  "editor.tabSize": 2, // 重新设定tabsize
+  "editor.detectIndentation": false, // 禁用自动检测缩进
+  // 将prettier设置为默认格式化程序(在编辑器中有可能被其他Formatter占用，所以将prettier设置为默认Formatter)
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // 关闭js/ts的默认format,统一用eslint进行格式化（tslint已经不维护了，所以转eslint吧）
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+  // 保存时自动格式化 (根据根目录下‘.prettierrc文件配置项’)
+  "editor.formatOnSave": true,
+  // Enable per-language
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features",
+    "editor.formatOnSave": true
+  },
+  "[vue]": {
+    "editor.formatOnSave": true, // 交给 eslint
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // 什么类型的文件需要遵守stylelint规则
+  "stylelint.validate": [
+    "css",
+    "less",
+    "postcss",
+    "scss",
+    "sass",
+    "vue"
+  ],
+  // 为ESLint启用“保存时自动修复”，并且仍然具有格式和快速修复功能
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never",
+    "source.fixAll.stylelint": "explicit"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": null,
+    "editor.formatOnSave": false
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  },
+  // Disable the default formatter, use eslint instead
+  "prettier.enable": false,
+  // Auto fix
+  "files.insertFinalNewline": true,
+  "files.autoSave": "afterDelay",
+  "i18n-ally.displayLanguage": "zh-cn", // 显示用的文字
+  "i18n-ally.enabledParsers": [
+    "ts"
+  ],
+  "i18n-ally.enabledFrameworks": [
+    "vue"
+  ],
+  "i18n-ally.editor.preferEditor": true,
+  "i18n-ally.keystyle": "nested", // 嵌套式json
+  "i18n-ally.localesPaths": [
+    "src/language/locales"
+  ],
+  "[html][css][less][scss][sass][markdown][yaml][yml][jsonc]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnSave": true
+  },
+  "i18n-ally.sourceLanguage": "zh-cn", // 翻译源语言
+  "unocss.sort": true,
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  // Silent the stylistic rules in you IDE, but still auto fix them
+  "eslint.rules.customizations": [
+    {
+      "rule": "style/*",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "format/*",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-indent",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-spacing",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-spaces",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-order",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-dangle",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*-newline",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*quotes",
+      "severity": "off",
+      "fixable": true
+    },
+    {
+      "rule": "*semi",
+      "severity": "off",
+      "fixable": true
+    }
+  ],
+  // Enable eslint for all supported languages
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "vue",
+    "html",
+    "markdown",
+    "json",
+    "jsonc",
+    "yaml",
+    "toml",
+    "xml",
+    "gql",
+    "graphql",
+    "astro",
+    "svelte",
+    "css",
+    "less",
+    "scss",
+    "pcss",
+    "postcss"
+  ],
+  "unot.switchMagic": true
+}

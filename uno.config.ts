@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig, presetAttributify } from 'unocss'
 import presetWeapp from 'unocss-preset-weapp'
 import { extractorAttributify, transformerClass } from 'unocss-preset-weapp/transformer'
@@ -18,16 +19,16 @@ export default defineConfig({
         640: 2.34 / 2,
         750: 1,
         375: 2,
-        828: 1.81 / 2
-      }
+        828: 1.81 / 2,
+      },
     }),
     // @ts-ignore
     presetWeappAttributify(),
     presetAttributify({
       prefix: 'un-',
-      prefixedOnly: false
+      prefixedOnly: false,
       // ignoreAttributes: []
-    })
+    }),
   ],
   transformers: [
     // https://github.com/MellowCo/unocss-preset-weapp/tree/main/src/transformer/transformerAttributify
@@ -51,7 +52,7 @@ export default defineConfig({
       //   $: '-r111-',
       //   ',': '-r222-'
       // }
-    })
+    }),
   ],
   // @ts-ignore opacity: active, disabled
   // rules: [[/^opacity-(active|disabled)$/, ([, d]) => ({ opacity: `var(--van-${d}-opacity)` })]],
@@ -69,7 +70,17 @@ export default defineConfig({
       active: 'var(--nut-active-color)',
       help: 'var(--nut-help-color)',
       disable: 'var(--nut-disable-color)',
-      required: 'var(--nut-required-color)'
-    }
-  }
+      required: 'var(--nut-required-color)',
+    },
+  },
+  shortcuts: {
+    'f-b': 'flex justify-between items-center',
+    'f-c': 'flex justify-center items-center',
+    'f-s': 'flex justify-start items-center',
+    'f-e': 'flex justify-end items-center',
+    'text-overflow': 'truncate',
+    'wh-full': 'w-full h-full',
+    'b-s': 'border border-solid border-[#f6f6f6]',
+    'b-s-gray': 'border border-solid border-[#EEEEEE] ',
+  },
 })

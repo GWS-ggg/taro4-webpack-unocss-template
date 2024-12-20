@@ -9,6 +9,7 @@
     "css": "Sass",
     "framework": "Vue3"
   },
+  "author": "",
   "scripts": {
     "build:weapp": "taro build --type weapp",
     "build:swan": "taro build --type swan",
@@ -27,13 +28,14 @@
     "dev:rn": "npm run build:rn -- --watch",
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
-    "dev:harmony-hybrid": "npm run build:harmony-hybrid -- --watch"
+    "dev:harmony-hybrid": "npm run build:harmony-hybrid -- --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "browserslist": [
     "defaults and fully supports es6-module",
     "maintained node versions"
   ],
-  "author": "",
   "dependencies": {
     "@babel/runtime": "^7.24.4",
     "@tarojs/components": "4.0.7",
@@ -50,9 +52,12 @@
     "@tarojs/runtime": "4.0.7",
     "@tarojs/shared": "4.0.7",
     "@tarojs/taro": "4.0.7",
+    "@vueuse/core": "^12.0.0",
+    "loadsh": "^0.0.4",
     "vue": "^3.0.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^3.12.0",
     "@babel/core": "^7.24.4",
     "@babel/plugin-proposal-class-properties": "7.14.5",
     "@tarojs/cli": "4.0.7",
@@ -61,12 +66,15 @@
     "@tarojs/webpack5-runner": "4.0.7",
     "@types/node": "^18",
     "@types/webpack-env": "^1.13.6",
+    "@unocss/eslint-plugin": "^0.65.1",
+    "@unocss/postcss": "^0.58.0",
+    "@unocss/preset-rem-to-px": "^0.58.0",
     "@unocss/webpack": "0.58.0",
     "@vue/babel-plugin-jsx": "^1.2.2",
     "@vue/compiler-sfc": "^3.0.0",
     "babel-preset-taro": "4.0.7",
     "css-loader": "^7.1.1",
-    "eslint": "^8.57.0",
+    "eslint": "^8.57.1",
     "eslint-config-taro": "4.0.7",
     "eslint-plugin-vue": "^9.17.0",
     "postcss": "^8.4.38",
@@ -77,8 +85,6 @@
     "typescript": "^5.4.5",
     "unocss": "^0.58.0",
     "unocss-preset-weapp": "^0.64.0",
-    "@unocss/postcss": "^0.58.0",
-    "@unocss/preset-rem-to-px": "^0.58.0",
     "vue-loader": "^17.4.2",
     "webpack": "^5.96.1"
   }
