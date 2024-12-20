@@ -2,13 +2,11 @@
   "surveyId": "SURV_001",
   "title": "测试问卷",
   "description": "请填写以下问卷，帮助我们改进服务。",
-  "totalQuestions": 5,
-  "pagination": true,
   "questions": [
     {
       "questionId": "Q1",
-      "type": "single",
-      "content": "Q1 您对我们的服务满意吗？",
+      "type": "singleChoice",
+      "content": "Q1 单选题",
       "options": [
         {
           "optionId": "A",
@@ -16,31 +14,29 @@
         },
         {
           "optionId": "B",
-          "content": "满意"
+          "content": "满意",
+          "jumpTo": "Q3"
         },
         {
           "optionId": "C",
-          "content": "一般",
-          "insertAfter": "Q6"
+          "content": "一般"
         },
         {
           "optionId": "D",
           "content": "不满意",
-          "jumpTo": "Q3"
+          "jumpTo": "Q0"
         }
       ],
-      "jumpTo": "Q2",
       "required": true
     },
     {
       "questionId": "Q2",
-      "type": "multiple",
-      "content": "Q2您希望我们改进哪些方面？",
+      "type": "multipleChoice",
+      "content": "Q2 多选题",
       "options": [
         {
           "optionId": "A",
-          "content": "服务速度",
-          "jumpTo": "Q4"
+          "content": "服务速度"
         },
         {
           "optionId": "B",
@@ -49,91 +45,112 @@
         },
         {
           "optionId": "C",
-          "content": "价格合理性",
-          "insertAfter": "Q6"
+          "content": "价格合理性"
         },
         {
           "optionId": "D",
-          "content": "其他",
-          "jumpTo": "Q4"
+          "content": "其他"
         }
       ],
       "required": false,
-      "maxSelection": 3,
-      "jumpTo": "Q3"
+      "maxSelection": 3
     },
     {
       "questionId": "Q3",
-      "type": "singleLineText",
-      "content": "Q3请简要描述您满意的原因。",
+      "type": "singleStringText",
+      "content": "Q3 单行字符串文本题",
       "required": false,
-      "maxLength": 1000,
-      "jumpTo": "Q4",
-      "dependsOn": {
-        "questionId": "Q1",
-        "optionId": "A"
-      }
+      "maxLength": 1000
     },
     {
       "questionId": "Q4",
-      "type": "matrixText",
-      "content": "Q4 请对以下方面进行详细描述：",
+      "type": "multipleStringText",
+      "content": "Q4 多行字符串文本题",
+      "required": false,
+      "maxLength": 1000
+    },
+    {
+      "questionId": "Q5",
+      "type": "numberText",
+      "content": "Q5 数字文本题",
+      "required": false,
+      "min": 1,
+      "max": 100,
+      "dependsOn": {
+        "conditions": [
+          {
+            "questionId": "Q2",
+            "optionId": "D"
+          }
+        ]
+      }
+    },
+    {
+      "questionId": "Q6",
+      "type": "stringTextGrid",
+      "content": "Q6 字符串文本网格题",
       "rows": [
         {
-          "rowId": "R1",
-          "content": "服务态度服务效率服务效率服务效率服务效率服务效率服务效率",
-          "required": true
+          "rowId": "Q61",
+          "content": "服务态度"
         },
         {
-          "rowId": "R2",
+          "rowId": "Q62",
           "content": "服务效率"
         },
         {
-          "rowId": "R3",
+          "rowId": "Q63",
           "content": "服务专业性"
         }
       ],
       "required": true,
       "dependsOn": {
-        "questionId": "Q1",
-        "optionId": "A"
-      },
-      "jumpTo": "Q5"
-    },
-    {
-      "questionId": "Q5",
-      "type": "multipleLineText",
-      "content": "Q5 请提出您的宝贵意见或建议。",
-      "required": false,
-      "maxLength": 1000,
-      "jumpTo": "Q0",
-      "dependsOn": {
-        "questionId": "Q1",
-        "optionId": "A"
-      }
-    }
-  ],
-  "insertQuestions": [
-    {
-      "questionId": "Q6",
-      "type": "singleLineText",
-      "content": "Q6 新插入的题 请输入您的姓名。",
-      "required": true
-    }
-  ],
-  "answers": {
-    "Q1": { "type": "single", "selectedOption": "" },
-    "Q2": { "type": "multiple", "selectedOptions": ["B"] },
-    "Q3": { "type": "singleLineText", "text": "" },
-    "Q4": {
-      "type": "matrixText",
-      "answers": {
-        "R1": "",
-        "R2": "",
-        "R3": ""
+        "conditions": [
+          {
+            "questionId": "Q2",
+            "optionId": "A"
+          }
+        ]
       }
     },
-    "Q5": { "type": "multipleLineText", "text": "" },
-    "Q6": { "type": "singleLineText", "text": "" }
-  }
+    {
+      "questionId": "Q7",
+      "type": "numberTextGrid",
+      "content": "Q7 数字文本网格题",
+      "rows": [
+        { "rowId": "Q71", "content": "71题" },
+        { "rowId": "Q72", "content": "72题" },
+        { "rowId": "Q73", "content": "73题" }
+      ]
+    },
+    {
+      "questionId": "Q8",
+      "type": "singleChoiceGrid",
+      "content": "Q8 单选题网格题",
+      "options": [
+        { "optionId": "A", "content": "服务态度" },
+        { "optionId": "B", "content": "服务效率" },
+        { "optionId": "C", "content": "服务专业性" }
+      ],
+      "rows": [
+        { "rowId": "Q81", "content": "81题" },
+        { "rowId": "Q82", "content": "82题" }
+      ]
+    },
+    {
+      "questionId": "Q9",
+      "type": "multipleChoiceGrid",
+      "content": "Q9 多选题网格题",
+      "options": [
+        { "optionId": "A", "content": "服务态度" },
+        { "optionId": "B", "content": "服务效率" },
+        { "optionId": "C", "content": "服务专业性" }
+      ],
+      "rows": [
+        { "rowId": "Q91", "content": "91题" },
+        { "rowId": "Q92", "content": "92题" }
+      ]
+    }
+
+  ]
 }

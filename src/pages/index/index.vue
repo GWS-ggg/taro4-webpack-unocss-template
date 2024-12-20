@@ -5,24 +5,27 @@ import surveyDataJson from './index.json'
 
 const surveyData = surveyDataJson as SurveyData
 
-// 显示题数  总题数 默认问题的当前索引  展示用的当前提数索引
+// 总题数
 const totalQuestionCount = ref(1)
+// 当前题数
 const shownQuestionNumber = ref(1) // 用于显示的题号
 
 // 初始化答案
-const answers = ref<Answers>({})
+const finalAnswers = ref<Answers[]>([])
+const tempAnswers = ref<TempAnswers>({})
+
 const allQuestions = ref<Question[]>([])
 // 当前展示的题目
 const currentQuestionId = ref('')
 const currentQuestion = computed(() => {
   const question = allQuestions.value.find(question => question.questionId === currentQuestionId.value)
   // TODO 应该没有这种情况 一定能找的到 找不到就报错
-  // jumpTo 为Q0 直接结束 弹框
   if (!question) {
     console.log('question not found', currentQuestionId.value)
     // 返回个默认值 返回最后一题？
     return surveyData.questions[surveyData.questions.length - 1]
   }
+  console.log('computed currentQuestion', question)
   return question
 })
 
@@ -34,17 +37,24 @@ onMounted(() => {
   Taro.setNavigationBarTitle({
     title: surveyData.title,
   })
+  // description
 
   // 初始化各种东西
+  totalQuestionCount.value = surveyData.questions.length
   currentQuestionId.value = surveyData.questions[0].questionId
-  totalQuestionCount.value = surveyData.totalQuestions
-
   // 所有问题
-  allQuestions.value = [...(surveyData.questions || []), ...(surveyData.insertQuestions || [])]
-  // 初始答案
-  answers.value = surveyData.answers as Answers
-  console.log('answers', answers.value)
+  allQuestions.value = surveyData.questions
+  initAnswers()
+  console.log('allQuestions', allQuestions.value, totalQuestionCount.value)
 })
+
+// 初始化答案 根据allQuestions 初始化
+function initAnswers() {
+  allQuestions.value.forEach((question) => {
+    tempAnswers.value[question.questionId] = { type: question.type }
+  })
+  console.log('tempAnswers', tempAnswers.value)
+}
 
 function handleMatrixInput(rowId: string, e: any) {
   const currentQuestionId = currentQuestion.value.questionId
@@ -264,16 +274,20 @@ function handleTextChange(e) {
   answers.value[currentQuestion.value.questionId].text = e.detail.value
 }
 // 单选 选项选中状态绑定 选项初始化 可以定义默认哪个选项选中
-function handleSelectBind(optionId: string) {
-  if (answers.value[currentQuestion.value.questionId]) {
-    return answers.value[currentQuestion.value.questionId].selectedOption === optionId
+function handleSelectBind(option: Option) {
+  console.log('currentQuestionId.value', currentQuestionId.value)
+  console.log('tempAnswers.value[currentQuestionId.value]', tempAnswers.value[currentQuestionId.value])
+  if (tempAnswers.value[currentQuestionId.value]) {
+    return tempAnswers.value[currentQuestionId.value].selectedOption === option
   }
   return false
 }
 // 单选 解决单选框选中问题 在单选框内任何位置都可触发
-function selectOption(optionId: string) {
-  answers.value[currentQuestion.value.questionId].selectedOption = optionId
-  console.log('selectOption', optionId)
+function selectOption(option: Option) {
+  console.log('currentQuestionId', currentQuestionId.value)
+  console.log('currentQuestion', currentQuestion.value)
+  tempAnswers.value[currentQuestionId.value].selectedOption = option
+  console.log('selectOption', tempAnswers.value[currentQuestionId.value])
 }
 </script>
 
@@ -286,7 +300,7 @@ function selectOption(optionId: string) {
       v-if="currentQuestion"
       class="mb-5"
     >
-      <view v-if="currentQuestion.type === 'single'">
+      <view v-if="currentQuestion.type === 'singleChoice'">
         <text
           v-if="currentQuestion.required"
           class="text-red"
@@ -301,18 +315,18 @@ function selectOption(optionId: string) {
             v-for="option in currentQuestion.options"
             :key="option.optionId"
             class="flex cursor-pointer items-center border border-[#f0f0f0] rounded border-solid bg-white p-3"
-            @tap="selectOption(option.optionId)"
+            @tap="selectOption(option)"
           >
             <radio
               :value="option.optionId"
-              :checked="handleSelectBind(option.optionId)"
+              :checked="handleSelectBind(option)"
               class="scale-110 transform"
             />
             <text class="ml-2">{{ option.content }}</text>
           </label>
         </radio-group>
       </view>
-      <view v-if="currentQuestion.type === 'multiple'">
+      <view v-if="currentQuestion.type === 'multipleChoice'">
         <text
           v-if="currentQuestion.required"
           class="text-red"
@@ -345,7 +359,7 @@ function selectOption(optionId: string) {
           </label>
         </checkbox-group>
       </view>
-      <view v-if="currentQuestion.type === 'singleLineText'">
+      <view v-if="currentQuestion.type === 'singleStringText'">
         <text
           v-if="currentQuestion.required"
           class="text-red"
@@ -357,13 +371,13 @@ function selectOption(optionId: string) {
         </text>
         <input
           type="text"
-          :value="answers[currentQuestion.questionId]?.text"
+          :value="answers[currentQuestion.questionId]"
           :maxlength="currentQuestion.maxLength"
           class="mt-5 border border-[#f0f0f0] rounded border-solid bg-white p-3"
           @blur="handleTextChange"
         >
       </view>
-      <view v-if="currentQuestion.type === 'multipleLineText'">
+      <view v-if="currentQuestion.type === 'multipleStringText'">
         <text
           v-if="currentQuestion.required"
           class="text-red"
@@ -374,13 +388,13 @@ function selectOption(optionId: string) {
           {{ shownQuestionNumber }}.{{ currentQuestion.content }}
         </text>
         <textarea
-          :value="answers[currentQuestion.questionId]?.text"
+          :value="answers[currentQuestion.questionId]"
           :maxlength="currentQuestion.maxLength"
           class="mt-5 w-full border border-[#f0f0f0] rounded border-solid bg-white p-1"
           @input="handleTextChange"
         />
       </view>
-      <view v-if="currentQuestion.type === 'matrixText'">
+      <view v-if="currentQuestion.type === 'numberTextGrid'">
         <text
           v-if="currentQuestion.required"
           class="text-red"
