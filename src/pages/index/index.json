@@ -14,8 +14,7 @@
         },
         {
           "optionId": "B",
-          "content": "满意",
-          "jumpTo": "Q3"
+          "content": "满意"
         },
         {
           "optionId": "C",
@@ -24,7 +23,31 @@
         {
           "optionId": "D",
           "content": "不满意",
-          "jumpTo": "Q0"
+          "jumpTo": "Q4"
+        }
+      ],
+      "required": true
+    },
+    {
+      "questionId": "Q111",
+      "type": "singleChoice",
+      "content": "Q111 单选题",
+      "options": [
+        {
+          "optionId": "A",
+          "content": "非常满意"
+        },
+        {
+          "optionId": "B",
+          "content": "满意"
+        },
+        {
+          "optionId": "C",
+          "content": "一般"
+        },
+        {
+          "optionId": "D",
+          "content": "不满意"
         }
       ],
       "required": true
@@ -41,7 +64,6 @@
         {
           "optionId": "B",
           "content": "服务质量"
-
         },
         {
           "optionId": "C",
@@ -67,7 +89,20 @@
       "type": "multipleStringText",
       "content": "Q4 多行字符串文本题",
       "required": false,
-      "maxLength": 1000
+      "maxLength": 1000,
+      "dependsOn": {
+        "type": "or",
+        "conditions": [
+          {
+            "questionId": "Q1",
+            "optionId": "A"
+          },
+          {
+            "questionId": "Q111",
+            "optionId": "B"
+          }
+        ]
+      }
     },
     {
       "questionId": "Q5",
@@ -77,10 +112,15 @@
       "min": 1,
       "max": 100,
       "dependsOn": {
+        "type": "and",
         "conditions": [
           {
-            "questionId": "Q2",
-            "optionId": "D"
+            "questionId": "Q1",
+            "optionId": "A"
+          },
+          {
+            "questionId": "Q111",
+            "optionId": "B"
           }
         ]
       }
@@ -103,15 +143,7 @@
           "content": "服务专业性"
         }
       ],
-      "required": true,
-      "dependsOn": {
-        "conditions": [
-          {
-            "questionId": "Q2",
-            "optionId": "A"
-          }
-        ]
-      }
+      "required": true
     },
     {
       "questionId": "Q7",
@@ -130,11 +162,13 @@
       "options": [
         { "optionId": "A", "content": "服务态度" },
         { "optionId": "B", "content": "服务效率" },
-        { "optionId": "C", "content": "服务专业性" }
+        { "optionId": "C", "content": "服务专业性" },
+        { "optionId": "D", "content": "服务专业性" }
       ],
       "rows": [
         { "rowId": "Q81", "content": "81题" },
-        { "rowId": "Q82", "content": "82题" }
+        { "rowId": "Q82", "content": "82题" },
+        { "rowId": "Q83", "content": "83题" }
       ]
     },
     {
@@ -151,6 +185,5 @@
         { "rowId": "Q92", "content": "92题" }
       ]
     }
-
   ]
 }

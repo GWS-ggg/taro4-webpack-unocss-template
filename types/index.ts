@@ -3,6 +3,7 @@ interface BaseQuestion {
   questionId: string
   content: string
   required?: boolean
+  jumpTo?: string
   dependsOn?: {
     type: 'and' | 'or'
     conditions: {
@@ -114,9 +115,15 @@ interface AnswerType {
   selectedOption?: Option // 用于单选
   selectedOptions?: Option[] // 用于多选
   text?: string // 文本题
+  number?: number // 数字题
   TextGrid?: Record<string, string> // 矩阵题
-  singleChoiceGrid?: Record<string, Option>
-  multipleChoiceGrid?: Record<string, Option[]>
+  singleChoiceGrid?: {
+    [rowId: string]: Option
+  }
+  multipleChoiceGrid?: {
+    [rowId: string]: Option[]
+  }
+  isCompleted: boolean // 用于判断答案是否已经填完
 }
 
 interface TempAnswers {

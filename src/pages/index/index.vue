@@ -7,28 +7,32 @@ const surveyData = surveyDataJson as SurveyData
 
 // 总题数
 const totalQuestionCount = ref(1)
-// 当前题数
-const shownQuestionNumber = ref(1) // 用于显示的题号
+// 用于显示的题号
+const shownQuestionNumber = ref(1)
 
 // 初始化答案
 const finalAnswers = ref<Answers[]>([])
 const tempAnswers = ref<TempAnswers>({})
 
 const allQuestions = ref<Question[]>([])
+
+// 控制当前展示的题目
+const currentQuestionIndex = ref(0)
 // 当前展示的题目
-const currentQuestionId = ref('')
-const currentQuestion = computed(() => {
-  const question = allQuestions.value.find(question => question.questionId === currentQuestionId.value)
-  // TODO 应该没有这种情况 一定能找的到 找不到就报错
-  if (!question) {
-    console.log('question not found', currentQuestionId.value)
-    // 返回个默认值 返回最后一题？
-    return surveyData.questions[surveyData.questions.length - 1]
+const currentQuestionId = computed(() => {
+  if (allQuestions.value.length > 0) {
+    return allQuestions.value[currentQuestionIndex.value].questionId || ''
   }
-  console.log('computed currentQuestion', question)
-  return question
+  return ''
+})
+const currentQuestion = computed(() => {
+  if (allQuestions.value.length > 0) {
+    return allQuestions.value[currentQuestionIndex.value] || ''
+  }
+  return ''
 })
 
+// TODO 缓存中取答案
 onMounted(() => {
   // 获取json数据 surveyData 设置为SurveyData类型
 
@@ -41,7 +45,6 @@ onMounted(() => {
 
   // 初始化各种东西
   totalQuestionCount.value = surveyData.questions.length
-  currentQuestionId.value = surveyData.questions[0].questionId
   // 所有问题
   allQuestions.value = surveyData.questions
   initAnswers()
@@ -51,250 +54,282 @@ onMounted(() => {
 // 初始化答案 根据allQuestions 初始化
 function initAnswers() {
   allQuestions.value.forEach((question) => {
-    tempAnswers.value[question.questionId] = { type: question.type }
+    tempAnswers.value[question.questionId] = { type: question.type, isCompleted: false }
   })
   console.log('tempAnswers', tempAnswers.value)
 }
 
-function handleMatrixInput(rowId: string, e: any) {
-  const currentQuestionId = currentQuestion.value.questionId
-  if (!answers.value[currentQuestionId]) {
-    answers.value[currentQuestionId] = { type: 'matrixText', answers: {} }
-  }
-  answers.value[currentQuestionId][rowId] = e.detail.value
-}
-
+// 判断是否是最后一题
 const isLastQuestion = computed(() => {
-  return shownQuestionNumber.value === totalQuestionCount.value || currentQuestion.value.jumpTo === 'Q0'
+  return currentQuestionIndex.value === (totalQuestionCount.value - 1) || (currentQuestion.value && currentQuestion.value.jumpTo === 'Q0')
 })
 
-// 处理 单个问题的 dependsOn 属性 如果前面题目的答案不符合条件，则不显示当前题目 将该题目从allQuestions中移除
-// TODO 选了某个选项直接结束的问题
-function shouldJumpQuestion(question: Question) {
-  console.log('shouldJumpQuestion', question)
-  if (!question.dependsOn) {
-    return false
-  }
-  const { questionId, optionId } = question.dependsOn
-  const answer = answers.value[questionId]
-  // TODO 应该没这种情况 错误处理
-  if (!answer) {
-    return false
-  }
-  if (answer.type === 'single' && answer.selectedOption === optionId) {
+// 判断该题是否需要显示 根据dependsOn 属性
+function shouldShowQuestion() {
+  if (!currentQuestion.value || !currentQuestion.value.dependsOn) {
     return true
   }
-  if (answer.type === 'multiple' && answer.selectedOptions?.includes(optionId)) {
-    return true
+  console.log('shouldShowQuestion', currentQuestion.value)
+  const { type, conditions } = currentQuestion.value.dependsOn
+  // 根据type 和 conditions 判断是否显示
+  if (type === 'and') {
+    return conditions.every(condition => tempAnswers.value[condition.questionId].selectedOption?.optionId === condition.optionId)
   }
-  return false
+  if (type === 'or') {
+    return conditions.some(condition => tempAnswers.value[condition.questionId].selectedOption?.optionId === condition.optionId)
+  }
+
+  return true
 }
 
 // 下一题按钮
 function handleNextQuestion() {
   const question = currentQuestion.value
-  // 备份当前问题
-  const clonedQuestionId = question.questionId
-  // 是否新插入了题目
-  let insertFlag = false
-
-  if (question && question.required && !answers.value[question.questionId]) {
+  // 为空 代表错误 报错  应该是一定有题目的
+  if (question === '') {
+    return
+  }
+  console.log(question)
+  if (question && question.required && !tempAnswers.value[question.questionId].isCompleted) {
     // 弹框 TODO
     console.log('请先答完本题')
     return
   }
 
-  // 单选
-  if (question && question.type === 'single') {
-    const selectedOption = question.options.find(option => option.optionId === answers.value[question.questionId].selectedOption)
-    console.log('selectedOption', selectedOption)
-    // TODO 处理找不到问题的情况 没有这种情况才对  错误处理
-    if (selectedOption) {
-      if (selectedOption.jumpTo) {
-        const nextQuestion = allQuestions.value.find(question => question.questionId === selectedOption.jumpTo)
-        if (nextQuestion) {
-          let tempQuestionId = currentQuestion.value.jumpTo
-          // TODO 会有问题么 思考 模拟跳转到nextQuestion 题 用于题数变化
-          while (tempQuestionId !== nextQuestion.questionId) {
-            console.log('count-- tempQuestionId', tempQuestionId)
-            totalQuestionCount.value--
-            tempQuestionId = allQuestions.value.find(question => question.questionId === tempQuestionId)?.jumpTo || ''
-            if (tempQuestionId === '' || tempQuestionId === 'Q0') {
-              console.log('跳转循环 count问题')
-              break
-            }
-          }
-          // 修改当前题号
-          currentQuestionId.value = nextQuestion.questionId
-        }
+  // 根据类型往最终答案中添加
+  addAnswerToFinal(question)
+  console.log('finalAnswers', finalAnswers.value)
 
-        // 找不到下一题 直接终止问卷 ？ TODO 应该没有这种情况才是正常的
-      }
-      else if (selectedOption.insertAfter) {
-        const insertQuestion = allQuestions.value.find(question => question.questionId === selectedOption.insertAfter)
-        if (insertQuestion) {
-          console.log('insertQuestion', insertQuestion)
-          currentQuestionId.value = insertQuestion.questionId
-          // 修改插入问题的跳转 jumpTo为原问题的跳转
-          currentQuestion.value.jumpTo = question.jumpTo
-          insertFlag = true
-        }
-      }
-      else {
-        // TODO 错误处理 按理说 jumpTo 一定有值
-        currentQuestionId.value = question.jumpTo || ''
-      }
-    }
+  // 跳题逻辑
+  let tempQuestionIndex = currentQuestionIndex.value
+  // TODO 错误处理 单选跳题
+  if (question.type === 'singleChoice' && tempAnswers.value[question.questionId].selectedOption?.jumpTo) {
+    const newIndex = allQuestions.value.findIndex(questionTemp => questionTemp.questionId === tempAnswers.value[question.questionId].selectedOption?.jumpTo)
+    tempQuestionIndex = newIndex
   }
-  else if (question && question.type === 'multiple') {
-    // 多选
-    const selectedOptions = answers.value[question.questionId]?.selectedOptions || []
-    const selectedOptionsDetails = question.options.filter(option => selectedOptions.includes(option.optionId))
-    console.log('Selected Options Details:', selectedOptionsDetails)
-    // 查看选项是否有 jumpTo或者insertAfter 只找第一个命中的选项 多余的不管
-    // TODO  多个选项有jumpTo或者insertAfter 应该怎么处理
-    const jumpTo = selectedOptionsDetails.find(option => option.jumpTo)
-    const insertAfter = selectedOptionsDetails.find(option => option.insertAfter)
-    if (jumpTo) {
-      const nextQuestion = allQuestions.value.find(question => question.questionId === jumpTo.jumpTo)
-      if (nextQuestion) {
-        let tempQuestionId = currentQuestion.value.jumpTo
-        // TODO 会有问题么 思考 模拟跳转到nextQuestion 题 用于题数变化
-        while (tempQuestionId !== nextQuestion.questionId) {
-          console.log('count-- tempQuestionId', tempQuestionId)
-          totalQuestionCount.value--
-          tempQuestionId = allQuestions.value.find(question => question.questionId === tempQuestionId)?.jumpTo || ''
-          if (tempQuestionId === '' || tempQuestionId === 'Q0') {
-            console.log('跳转循环 count问题')
-            break
-          }
-        }
-        // 修改当前题号
-        currentQuestionId.value = nextQuestion.questionId
-      }
-    }
-    else if (insertAfter) {
-      const insertQuestion = allQuestions.value.find(question => question.questionId === insertAfter.insertAfter)
-      if (insertQuestion) {
-        currentQuestionId.value = insertQuestion.questionId
-        // 修改插入问题的跳转 jumpTo为原问题的跳转
-        currentQuestion.value.jumpTo = question.jumpTo
-        insertFlag = true
-      }
-    }
-    else {
-      // TODO 错误处理 按理说 jumpTo 一定有值
-      currentQuestionId.value = question.jumpTo || ''
-    }
-  }
-  else if (question && question.type === 'singleLineText') {
-    // 单行文本
-    const nextQuestion = allQuestions.value.find(tempQuestion => tempQuestion.questionId === question.jumpTo)
-    console.log('nextQuestion', nextQuestion)
-    if (nextQuestion) {
-      currentQuestionId.value = nextQuestion.questionId
-    }
-  }
-  else if (question && question.type === 'multipleLineText') {
-    // 多行文本
-    const nextQuestion = allQuestions.value.find(tempQuestion => tempQuestion.questionId === question.jumpTo)
-    if (nextQuestion) {
-      currentQuestionId.value = nextQuestion.questionId
-    }
-  }
-  else if (question && question.type === 'matrixText') {
-    // 矩阵文本
-    const nextQuestion = allQuestions.value.find(tempQuestion => tempQuestion.questionId === question.jumpTo)
-    if (nextQuestion) {
-      currentQuestionId.value = nextQuestion.questionId
-    }
+  // 无条件跳题
+  if (question.jumpTo) {
+    const newIndex = allQuestions.value.findIndex(questionTemp => questionTemp.questionId === question.jumpTo)
+    tempQuestionIndex = newIndex
   }
 
-  // TODO 处理跳转错误 ''改成Q0 ?  直接结束？
-  if (clonedQuestionId === currentQuestionId.value || currentQuestionId.value === '') {
-    console.log('跳转错误', clonedQuestionId, currentQuestionId.value)
+  // 判断是否跳题
+  if (tempQuestionIndex === currentQuestionIndex.value) {
+    currentQuestionIndex.value++
   }
-  console.log('clonedQuestionId', clonedQuestionId)
-  console.log('currentQuestionId', currentQuestionId.value)
-  console.log('currentAnswer', answers.value)
+  else {
+    currentQuestionIndex.value = tempQuestionIndex
+  }
 
-  // 应该一次扫描全部问题 有多个连续跳转的问题存在
-  // 处理 题目关联问题 跳转时判断是否显示该题 不显示则直接跳过
-  // 循环处理连续需要跳过的问题
-  while (shouldJumpQuestion(currentQuestion.value)) {
-    console.log('shouldIncludeQuestion', currentQuestion.value)
-    totalQuestionCount.value--
-    currentQuestionId.value = currentQuestion.value.jumpTo || ''
-    // TODO 错误处理问题
-    // 如果为Q0 => 后面的题都隐藏了 直接结束  弹窗？
-    if (currentQuestionId.value === '' || currentQuestionId.value === 'Q0') {
-      console.log('currentQuestionId.value', currentQuestionId.value)
-      console.log('currentQuestion.value', currentQuestion.value)
-      console.log('跳转错误 dependsOn 问题')
+  // 展示用题号++
+  shownQuestionNumber.value++
+
+  // 处理题目关联
+  while (!shouldShowQuestion()) {
+    currentQuestionIndex.value++
+    // TODO 最后一题被隐藏的情况 弹框结束 报错？
+    if (currentQuestionIndex.value >= totalQuestionCount.value) {
+      console.log('最后一题被隐藏  弹框结束')
       break
     }
   }
-  if (insertFlag) {
-    totalQuestionCount.value++
+}
+
+function addAnswerToFinal(question: Question) {
+  // 没填东西 不更新答案
+  if (!tempAnswers.value[question.questionId].isCompleted) {
+    return
   }
-  shownQuestionNumber.value++
+
+  if (question.type === 'singleChoice') {
+    finalAnswers.value.push({
+      questionId: question.questionId,
+      answer: tempAnswers.value[question.questionId].selectedOption?.optionId || '',
+      answerText: tempAnswers.value[question.questionId].selectedOption?.content || '',
+    })
+  }
+  if (question.type === 'multipleChoice') {
+    finalAnswers.value.push({
+      questionId: question.questionId,
+      answer: tempAnswers.value[question.questionId].selectedOptions?.map(option => option.optionId).join(',') || '',
+      answerText: tempAnswers.value[question.questionId].selectedOptions?.map(option => option.content).join(',') || '',
+    })
+  }
+  else if (question.type === 'singleStringText') {
+    finalAnswers.value.push({
+      questionId: question.questionId,
+      answer: tempAnswers.value[question.questionId].text || '',
+    })
+  }
+  else if (question.type === 'numberText') {
+    finalAnswers.value.push({
+      questionId: question.questionId,
+      answer: tempAnswers.value[question.questionId].number?.toString() || '',
+    })
+  }
+  else if (question.type === 'multipleStringText') {
+    finalAnswers.value.push({
+      questionId: question.questionId,
+      answer: tempAnswers.value[question.questionId].text || '',
+    })
+  }
+  else if (question.type === 'stringTextGrid') {
+    question.rows.forEach((row) => {
+      finalAnswers.value.push({
+        questionId: row.rowId,
+        answer: tempAnswers.value[question.questionId][row.rowId] || '',
+      })
+    })
+  }
+  else if (question.type === 'numberTextGrid') {
+    question.rows.forEach((row) => {
+      finalAnswers.value.push({
+        questionId: row.rowId,
+        answer: tempAnswers.value[question.questionId][row.rowId] || '',
+      })
+    })
+  }
+  else if (question.type === 'singleChoiceGrid') {
+    question.rows.forEach((row) => {
+      finalAnswers.value.push({
+        questionId: row.rowId,
+        answer: tempAnswers.value[question.questionId]?.singleChoiceGrid?.[row.rowId]?.optionId || '',
+        answerText: tempAnswers.value[question.questionId]?.singleChoiceGrid?.[row.rowId]?.content || '',
+      })
+    })
+  }
+  else if (question.type === 'multipleChoiceGrid') {
+    question.rows.forEach((row) => {
+      finalAnswers.value.push({
+        questionId: row.rowId,
+        answer: tempAnswers.value[question.questionId]?.multipleChoiceGrid?.[row.rowId]?.map(option => option.optionId).join(',') || '',
+        answerText: tempAnswers.value[question.questionId]?.multipleChoiceGrid?.[row.rowId]?.map(option => option.content).join(',') || '',
+      })
+    })
+  }
 }
 
 function closeSurvey() {
+  // 保存最后一题答案
+  if (currentQuestion.value) {
+    addAnswerToFinal(currentQuestion.value)
+  }
   // 保存进度并关闭问卷
-  console.log('Survey closed, progress saved:', answers.value)
+  console.log('Survey closed tempAnswers', tempAnswers.value)
+  console.log('Survey closed, finalAnswers:', finalAnswers.value)
 }
 
-// 多选 选中状态绑定
-function handleMutipleBind(optionId: string) {
-  return answers.value[currentQuestion.value.questionId]?.selectedOptions?.includes(optionId) || false
-}
-// 多选 h5使用 选中点击 处理最多选择问题
-function selectMutipleOption(optionId: string) {
-  const question = currentQuestion.value
-  const selectedOptions = answers.value[currentQuestion.value.questionId]?.selectedOptions || []
-  if (!selectedOptions.includes(optionId)) {
-    selectedOptions.push(optionId)
-  }
-  else {
-    selectedOptions.splice(selectedOptions.indexOf(optionId), 1)
-  }
-  if (question && question.type === 'multiple' && question.maxSelection) {
-    if (selectedOptions.length > question.maxSelection) {
-      // 自动去掉最开始选择的那个
-      selectedOptions.shift()
-    }
-    answers.value[currentQuestion.value.questionId].selectedOptions = selectedOptions
-  }
-
-  console.log('selectedOptions h5', answers.value[currentQuestion.value.questionId].selectedOptions)
-}
-// 文本框输入
-function handleTextChange(e) {
-  answers.value[currentQuestion.value.questionId].text = e.detail.value
-}
 // 单选 选项选中状态绑定 选项初始化 可以定义默认哪个选项选中
 function handleSelectBind(option: Option) {
-  console.log('currentQuestionId.value', currentQuestionId.value)
-  console.log('tempAnswers.value[currentQuestionId.value]', tempAnswers.value[currentQuestionId.value])
   if (tempAnswers.value[currentQuestionId.value]) {
     return tempAnswers.value[currentQuestionId.value].selectedOption === option
   }
   return false
 }
 // 单选 解决单选框选中问题 在单选框内任何位置都可触发
-function selectOption(option: Option) {
-  console.log('currentQuestionId', currentQuestionId.value)
-  console.log('currentQuestion', currentQuestion.value)
+function handleSelectOption(option: Option) {
   tempAnswers.value[currentQuestionId.value].selectedOption = option
-  console.log('selectOption', tempAnswers.value[currentQuestionId.value])
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+
+// 多选 选中状态绑定
+function handleMutipleBind(option: Option) {
+  return tempAnswers.value[currentQuestionId.value]?.selectedOptions?.includes(option) || false
+}
+// 多选  选中点击 处理最多选择问题
+function selectMutipleOption(option: Option) {
+  const question = currentQuestion.value
+  const selectedOptions = tempAnswers.value[currentQuestionId.value]?.selectedOptions || []
+  if (!selectedOptions.includes(option)) {
+    selectedOptions.push(option)
+  }
+  else {
+    selectedOptions.splice(selectedOptions.indexOf(option), 1)
+  }
+
+  if (question && question.type === 'multipleChoice' && question.maxSelection) {
+    if (selectedOptions.length > question.maxSelection) {
+      // 自动去掉最开始选择的那个
+      selectedOptions.shift()
+    }
+  }
+  tempAnswers.value[currentQuestionId.value].selectedOptions = selectedOptions
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+// 字符串文本框输入
+function handleTextChange(e: any) {
+  tempAnswers.value[currentQuestionId.value].text = e.detail.value
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+
+// 数字文本框输入
+function handleNumberInput(e: any) {
+  const numberValue = e.detail.value.replace(/\D/g, '') // 移除非数字字符
+  const tempData = {
+    ...tempAnswers.value,
+  }
+  tempData[currentQuestionId.value].number = numberValue
+  tempData[currentQuestionId.value].isCompleted = true
+  // 重新赋值整个对象以确保视图更新
+  tempAnswers.value = tempData
+}
+
+// 矩阵文本框输入
+function handleMatrixInput(rowId: string, e: any) {
+  tempAnswers.value[currentQuestionId.value][rowId] = e.detail.value
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+
+// 矩阵数字框输入
+function handleNumberMatrixInput(rowId: string, e: any) {
+  const numberValue = e.detail.value.replace(/\D/g, '') // 移除非数字字符
+  const tempData = {
+    ...tempAnswers.value,
+  }
+  tempData[currentQuestionId.value][rowId] = numberValue
+  tempData[currentQuestionId.value].isCompleted = true
+  // 重新赋值整个对象以确保视图更新
+  tempAnswers.value = tempData
+}
+
+// 单选网格题
+function handleSingleChoiceGridTap(rowId: string, option: Option) {
+  const singleGrid = tempAnswers.value[currentQuestionId.value]?.singleChoiceGrid || {}
+  singleGrid[rowId] = option
+  tempAnswers.value[currentQuestionId.value].singleChoiceGrid = singleGrid
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+function handleSingleChoiceGridBind(rowId: string, option: Option) {
+  return tempAnswers.value[currentQuestionId.value]?.singleChoiceGrid?.[rowId] === option || false
+}
+
+// 多选网格题
+function handleMultipleChoiceGridTap(rowId: string, option: Option) {
+  const multipleGrid = tempAnswers.value[currentQuestionId.value]?.multipleChoiceGrid || {}
+  const multipleGridOptions = multipleGrid[rowId] || []
+  if (!multipleGridOptions.includes(option)) {
+    multipleGridOptions.push(option)
+  }
+  else {
+    multipleGridOptions.splice(multipleGridOptions.indexOf(option), 1)
+  }
+  multipleGrid[rowId] = multipleGridOptions
+
+  tempAnswers.value[currentQuestionId.value].multipleChoiceGrid = multipleGrid
+  tempAnswers.value[currentQuestionId.value].isCompleted = true
+}
+function handleMultipleChoiceGridBind(rowId: string, option: Option) {
+  return tempAnswers.value[currentQuestionId.value]?.multipleChoiceGrid?.[rowId]?.includes(option) || false
 }
 </script>
 
 <template>
   <view class="flex-col p-5 text-[18PX]">
     <view class="mb-5 f-c">
-      <text>当前进度: {{ shownQuestionNumber }} / {{ totalQuestionCount }}</text>
+      <text>当前进度: 第{{ shownQuestionNumber }}题 </text>
+    </view>
+    <view class="mb-5 f-c">
+      <text>进度条进度: 第{{ currentQuestionIndex + 1 }}题 / {{ totalQuestionCount }}题</text>
     </view>
     <view
       v-if="currentQuestion"
@@ -315,7 +350,7 @@ function selectOption(option: Option) {
             v-for="option in currentQuestion.options"
             :key="option.optionId"
             class="flex cursor-pointer items-center border border-[#f0f0f0] rounded border-solid bg-white p-3"
-            @tap="selectOption(option)"
+            @tap="handleSelectOption(option)"
           >
             <radio
               :value="option.optionId"
@@ -347,11 +382,11 @@ function selectOption(option: Option) {
             v-for="option in currentQuestion.options"
             :key="option.optionId"
             class="flex cursor-pointer items-center border border-[#f0f0f0] rounded border-solid bg-white p-3"
-            @tap="selectMutipleOption(option.optionId)"
+            @tap="selectMutipleOption(option)"
           >
             <checkbox
               :value="option.optionId"
-              :checked="handleMutipleBind(option.optionId)"
+              :checked="handleMutipleBind(option)"
               class="scale-110 transform"
             >
               <text class="ml-2">{{ option.content }}</text>
@@ -371,7 +406,7 @@ function selectOption(option: Option) {
         </text>
         <input
           type="text"
-          :value="answers[currentQuestion.questionId]"
+          :value="tempAnswers[currentQuestionId].text"
           :maxlength="currentQuestion.maxLength"
           class="mt-5 border border-[#f0f0f0] rounded border-solid bg-white p-3"
           @blur="handleTextChange"
@@ -388,11 +423,56 @@ function selectOption(option: Option) {
           {{ shownQuestionNumber }}.{{ currentQuestion.content }}
         </text>
         <textarea
-          :value="answers[currentQuestion.questionId]"
+          :value="tempAnswers[currentQuestionId].text"
           :maxlength="currentQuestion.maxLength"
           class="mt-5 w-full border border-[#f0f0f0] rounded border-solid bg-white p-1"
           @input="handleTextChange"
         />
+      </view>
+      <view v-if="currentQuestion.type === 'numberText'">
+        <text
+          v-if="currentQuestion.required"
+          class="text-red"
+        >
+          *
+        </text>
+        <text class="text-18PX">
+          {{ shownQuestionNumber }}.{{ currentQuestion.content }}
+        </text>
+        <input
+          type="text"
+          :value="tempAnswers[currentQuestionId].number"
+          :min="currentQuestion.min"
+          :max="currentQuestion.max"
+          class="mt-5 border border-[#f0f0f0] rounded border-solid bg-white p-3"
+          @input="handleNumberInput"
+        >
+      </view>
+      <view v-if="currentQuestion.type === 'stringTextGrid'">
+        <text
+          v-if="currentQuestion.required"
+          class="text-red"
+        >
+          *
+        </text>
+        <text class="text-18PX">
+          {{ shownQuestionNumber }}.{{ currentQuestion.content }}
+        </text>
+        <view
+          v-for="row in currentQuestion.rows"
+          :key="row.rowId"
+          class="mt-5 flex items-center justify-between"
+        >
+          <text class="mr-2 w-1/2">
+            {{ row.content }}
+          </text>
+          <input
+            type="text"
+            :value="tempAnswers[currentQuestionId]?.[row.rowId]"
+            class="w-1/2 border border-[#f0f0f0] rounded border-solid bg-white p-3"
+            @blur="(e) => handleMatrixInput(row.rowId, e)"
+          >
+        </view>
       </view>
       <view v-if="currentQuestion.type === 'numberTextGrid'">
         <text
@@ -414,10 +494,104 @@ function selectOption(option: Option) {
           </text>
           <input
             type="text"
-            :value="answers[currentQuestion.questionId]?.[row.rowId]"
+            :value="tempAnswers[currentQuestionId]?.[row.rowId]"
             class="w-1/2 border border-[#f0f0f0] rounded border-solid bg-white p-3"
-            @blur="(e) => handleMatrixInput(row.rowId, e)"
+            @input="(e) => handleNumberMatrixInput(row.rowId, e)"
           >
+        </view>
+      </view>
+      <view v-if="currentQuestion.type === 'singleChoiceGrid'">
+        <text
+          v-if="currentQuestion.required"
+          class="text-red"
+        >
+          *
+        </text>
+        <text class="text-18PX">
+          {{ shownQuestionNumber }}.{{ currentQuestion.content }}
+        </text>
+        <view class="mt-5">
+          <!-- 选项标题行 -->
+          <view :style="`display: grid; grid-template-columns: repeat(${currentQuestion.options.length + 1}, 1fr); gap: 10px;`">
+            <view class="text-center" />
+            <view
+              v-for="option in currentQuestion.options"
+              :key="option.optionId"
+              class="text-center"
+            >
+              {{ option.content }}
+            </view>
+          </view>
+
+          <!-- 行内容和选项 -->
+          <view
+            v-for="row in currentQuestion.rows"
+            :key="row.rowId"
+            class="mt-5"
+            :style="`display: grid; grid-template-columns: repeat(${currentQuestion.options.length + 1}, 1fr); gap: 10px;`"
+          >
+            <view class="text-center">
+              {{ row.content }}
+            </view>
+            <label
+              v-for="option in currentQuestion.options"
+              :key="option.optionId"
+              class="flex justify-center"
+              @tap="handleSingleChoiceGridTap(row.rowId, option)"
+            >
+              <radio
+                :value="option.optionId"
+                :checked="handleSingleChoiceGridBind(row.rowId, option)"
+              />
+            </label>
+          </view>
+        </view>
+      </view>
+      <view v-if="currentQuestion.type === 'multipleChoiceGrid'">
+        <text
+          v-if="currentQuestion.required"
+          class="text-red"
+        >
+          *
+        </text>
+        <text class="text-18PX">
+          {{ shownQuestionNumber }}.{{ currentQuestion.content }}
+        </text>
+        <view class="mt-5">
+          <!-- 选项标题行 -->
+          <view :style="`display: grid; grid-template-columns: repeat(${currentQuestion.options.length + 1}, 1fr); gap: 10px;`">
+            <view class="text-center" />
+            <view
+              v-for="option in currentQuestion.options"
+              :key="option.optionId"
+              class="text-center"
+            >
+              {{ option.content }}
+            </view>
+          </view>
+
+          <!-- 行内容和选项 -->
+          <view
+            v-for="row in currentQuestion.rows"
+            :key="row.rowId"
+            class="mt-5"
+            :style="`display: grid; grid-template-columns: repeat(${currentQuestion.options.length + 1}, 1fr); gap: 10px;`"
+          >
+            <view class="text-center">
+              {{ row.content }}
+            </view>
+            <label
+              v-for="option in currentQuestion.options"
+              :key="option.optionId"
+              class="flex justify-center"
+              @tap="handleMultipleChoiceGridTap(row.rowId, option)"
+            >
+              <checkbox
+                :value="option.optionId"
+                :checked="handleMultipleChoiceGridBind(row.rowId, option)"
+              />
+            </label>
+          </view>
         </view>
       </view>
     </view>
@@ -445,6 +619,7 @@ function selectOption(option: Option) {
 
 <style lang="scss">
 radio {
+
   /* 自定义单选框的颜色 */
   .wx-radio-input.wx-radio-input-checked {
     background-color: #0088ff !important;
@@ -455,8 +630,8 @@ radio {
 .custom-button {
   background-color: #0095FF;
   color: #fff
+}
 
-   }
 /* 选中状态下的样式 */
 // label:has(radio:checked) {
 //   @apply border-blue-500 bg-blue-50;
