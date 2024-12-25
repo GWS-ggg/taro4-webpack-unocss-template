@@ -123,7 +123,6 @@ interface AnswerType {
   multipleChoiceGrid?: {
     [rowId: string]: Option[]
   }
-  isCompleted: boolean // 用于判断答案是否已经填完
 }
 
 interface TempAnswers {

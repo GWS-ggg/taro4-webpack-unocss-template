@@ -6,7 +6,7 @@
     {
       "questionId": "Q1",
       "type": "singleChoice",
-      "content": "Q1 单选题",
+      "content": "Q1 单选题 How much time do you spend in Heroic Journey daily?",
       "options": [
         {
           "optionId": "A",
@@ -49,8 +49,8 @@
           "optionId": "D",
           "content": "不满意"
         }
-      ],
-      "required": true
+      ]
+
     },
     {
       "questionId": "Q2",
@@ -74,21 +74,21 @@
           "content": "其他"
         }
       ],
-      "required": false,
+
       "maxSelection": 3
     },
     {
       "questionId": "Q3",
       "type": "singleStringText",
       "content": "Q3 单行字符串文本题",
-      "required": false,
+
       "maxLength": 1000
     },
     {
       "questionId": "Q4",
       "type": "multipleStringText",
       "content": "Q4 多行字符串文本题",
-      "required": false,
+
       "maxLength": 1000,
       "dependsOn": {
         "type": "or",
@@ -108,7 +108,7 @@
       "questionId": "Q5",
       "type": "numberText",
       "content": "Q5 数字文本题",
-      "required": false,
+
       "min": 1,
       "max": 100,
       "dependsOn": {
@@ -142,8 +142,8 @@
           "rowId": "Q63",
           "content": "服务专业性"
         }
-      ],
-      "required": true
+      ]
+
     },
     {
       "questionId": "Q7",
@@ -154,6 +154,7 @@
         { "rowId": "Q72", "content": "72题" },
         { "rowId": "Q73", "content": "73题" }
       ]
+
     },
     {
       "questionId": "Q8",
@@ -170,20 +171,22 @@
         { "rowId": "Q82", "content": "82题" },
         { "rowId": "Q83", "content": "83题" }
       ]
+
     },
     {
       "questionId": "Q9",
       "type": "multipleChoiceGrid",
       "content": "Q9 多选题网格题",
       "options": [
-        { "optionId": "A", "content": "服务态度" },
-        { "optionId": "B", "content": "服务效率" },
-        { "optionId": "C", "content": "服务专业性" }
+        { "content": "服务态度" },
+        { "content": "服务效率" },
+        { "content": "服务专业性" }
       ],
       "rows": [
         { "rowId": "Q91", "content": "91题" },
         { "rowId": "Q92", "content": "92题" }
       ]
+
     }
   ]
 }

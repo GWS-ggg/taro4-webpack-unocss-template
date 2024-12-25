@@ -71,6 +71,7 @@ export default defineConfig({
       help: 'var(--nut-help-color)',
       disable: 'var(--nut-disable-color)',
       required: 'var(--nut-required-color)',
+      oceanBlue: '#0088ff', // 新增的自定义颜色#0088ff
     },
   },
   shortcuts: {
