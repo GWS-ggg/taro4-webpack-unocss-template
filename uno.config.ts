@@ -73,6 +73,9 @@ export default defineConfig({
       required: 'var(--nut-required-color)',
       oceanBlue: '#0088ff', // 新增的自定义颜色#0088ff
     },
+    breakpoints: {
+      lg: '750px', // 修改 lg 断点为 1025px
+    },
   },
   shortcuts: {
     'f-b': 'flex justify-between items-center',

@@ -29,7 +29,7 @@ function handleInputChange(e) {
       type="text"
       :value="value"
       :maxlength="maxlength"
-      class="relative w-full border-b-3PX border-[#f0f0f0] rounded border-b-solid p-b-4PX"
+      class="relative w-full border-b-3PX border-[#f0f0f0] rounded border-b-solid p-b-4PX text-18PX"
       autoHeight
       @focus="handleInputFocus"
       @blur="handleInputBlur"

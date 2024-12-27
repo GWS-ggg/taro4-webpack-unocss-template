@@ -30,7 +30,7 @@ function handleInputChange(e) {
       :value="value"
       :maxlength="maxlength"
       autoHeight
-      class="relative border-b-3PX border-[#f0f0f0] rounded border-b-solid p-2"
+      class="relative border-b-3PX border-[#f0f0f0] rounded border-b-solid p-b-2PX"
       @focus="handleInputFocus"
       @blur="handleInputBlur"
       @input="handleInputChange"

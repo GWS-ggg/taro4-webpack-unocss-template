@@ -1,7 +1,7 @@
 {
   "surveyId": "SURV_001",
-  "title": "《Heroic Journey》",
-  "description": "Hey, Adventurer! The Heroic Journey team invites you to share your feedback about our game. This survey will only take around 3 minutes, and you'll receive a special reward for completing it. Your feedback means a lot to us and will help us bring you a better experience. We can't wait to hear your thoughts!",
+  "title": "测试问卷",
+  "description": "请填写以下问卷，帮助我们改进服务。",
   "questions": [
     {
       "questionId": "Q1",
@@ -74,7 +74,7 @@
           "content": "其他"
         }
       ],
-
+      "required": true,
       "maxSelection": 3
     },
     {
@@ -89,8 +89,6 @@
       "type": "multipleStringText",
       "content": "Q4 多行字符串文本题",
       "maxLength": 1000,
-      "min": 1,
-      "IncludeBounds": 0,
       "dependsOn": {
         "type": "or",
         "conditions": [

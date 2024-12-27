@@ -1,0 +1,26 @@
+
+.custom-button {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  text-align: center;
+  color: #0088ff;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #fff;
+  border-width: 0;
+  border-radius: 5PX;
+  outline: 0;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 14PX;
+  padding-right: 14PX;
+  font-size: 18PX;
+  line-height: 2.55556;
+  text-decoration: none;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}

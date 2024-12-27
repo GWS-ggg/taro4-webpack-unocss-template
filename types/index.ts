@@ -128,3 +128,11 @@ interface AnswerType {
 interface TempAnswers {
   [key: string]: AnswerType
 }
+
+interface CacheData {
+  currentQuestionIndex: number
+  shownQuestionNumber: number
+  tempAnswers: TempAnswers
+  finalAnswers: Answers[]
+  completed?: boolean
+}
