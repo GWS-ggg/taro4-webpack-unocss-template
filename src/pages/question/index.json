@@ -81,7 +81,9 @@
       "questionId": "Q3",
       "type": "singleStringText",
       "content": "Q3 单行字符串文本题",
-
+      "IncludeBounds": 0,
+      "min": 0,
+      "max": 1000,
       "maxLength": 1000
     },
     {

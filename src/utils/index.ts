@@ -22,3 +22,18 @@ export function isEmpty(value: any): boolean {
   // 其他情况不为空
   return false
 }
+
+export function checkBounds(length: number, min: number, max: number, boundsType: number): boolean {
+  switch (boundsType) {
+    case 0: // IncludeBoth "[,]"
+      return length >= min && length <= max
+    case 1: // IncludeLeftOnly "[,)"
+      return length >= min && length < max
+    case 2: // IncludeRightOnly "(,]"
+      return length > min && length <= max
+    case 3: // IncludeNeither "(,)"
+      return length > min && length < max
+    default:
+      return true // 如果 boundsType 不合法，直接返回 true
+  }
+}

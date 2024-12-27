@@ -10,6 +10,8 @@ const locale: LocaleMessages<any> = {
   startQuiz: 'Start Quiz',
   endQuiz: 'End Quiz',
   onlyNumber: '(Must be a number)',
+  maxChoice_head: 'You can only choose up to',
+  maxChoice_tail: 'options',
 }
 
 export default locale

@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AnimatedInput from '../../components/AnimatedInput/index.vue'
 import AnimatedTextarea from '../../components/AnimatedTextarea/index.vue'
-import { isEmpty } from '../../utils/index'
+import { checkBounds, isEmpty } from '../../utils/index'
 import surveyDataJson from './index.json'
 
 const { t, locale } = useI18n()
@@ -40,11 +40,24 @@ const currentQuestion = computed(() => {
   return ''
 })
 
+const questionTypeMap = {
+  0: 'singleStringText', // 单行文本;
+  1: 'numberText', // 数字;
+  2: 'multipleStringText', // 多行文本;
+  3: 'singleChoice', // 单选;
+  4: 'multipleChoice', // 多选;
+  5: 'stringTextGrid', // 网格单行文本;
+  6: 'numberTextGrid', // 网格数字;
+  7: 'singleChoiceGrid', // 矩阵单选;
+  8: 'multipleChoiceGrid', // 矩阵多选
+}
+
 // TODO 缓存中取答案
 onMounted(() => {
   // 获取json数据 surveyData 设置为SurveyData类型
 
   console.log('surveyData', surveyData)
+
   // 设置标题
   Taro.setNavigationBarTitle({
     title: surveyData.title,
@@ -54,7 +67,11 @@ onMounted(() => {
   // 初始化各种东西
   totalQuestionCount.value = surveyData.questions.length
   // 所有问题
-  allQuestions.value = surveyData.questions
+  // 将问题中的类型 根据questionTypeMap转换
+  allQuestions.value = surveyData.questions.map((question) => {
+    question.type = questionTypeMap[question.type]
+    return question
+  })
   initAnswers()
   // 获取缓存数据
   cacheData.value = Taro.getStorageSync(`${surveyData.surveyId}_cacheData`)
@@ -99,6 +116,44 @@ function shouldShowQuestion() {
 
 const showErrorContent = ref(false)
 
+// 处理文本题 最大值 最小值
+function isStringTextWithinLimits(question: Question, answer: TempAnswers): boolean {
+  if ((question.type !== 'singleStringText' && question.type !== 'multipleStringText') || !question.IncludeBounds) {
+    return true // 如果问题类型不匹配或 IncludeBounds 未定义，直接返回 true
+  }
+
+  const text = answer[question.questionId]?.text
+  if (typeof text !== 'string') {
+    return true // 如果 text 不是字符串，直接返回 true
+  }
+
+  const { min, max, IncludeBounds } = question
+  if (min === undefined || max === undefined) {
+    return true // 如果 min 或 max 未定义，直接返回 true
+  }
+
+  const textLength = text.length
+  return checkBounds(textLength, min, max, IncludeBounds)
+}
+
+function isNumberTextWithinLimits(question: Question, answer: TempAnswers): boolean {
+  if (question.type !== 'numberText' || !question.IncludeBounds) {
+    return true // 如果问题类型不匹配或 IncludeBounds 未定义，直接返回 true
+  }
+
+  const number = answer[question.questionId]?.number
+  if (typeof number !== 'number') {
+    return true // 如果 number 不是数字，直接返回 true
+  }
+
+  const { min, max, IncludeBounds } = question
+  if (min === undefined || max === undefined) {
+    return true // 如果 min 或 max 未定义，直接返回 true
+  }
+
+  return checkBounds(number, min, max, IncludeBounds)
+}
+
 // 必填判断 是否所有位置都已经填写
 function isAllFilled(question: Question, answer: TempAnswers) {
   console.log('isAllFilled', question, answer)
@@ -107,10 +162,12 @@ function isAllFilled(question: Question, answer: TempAnswers) {
     return !isEmpty(answer[question.questionId].selectedOption?.optionId)
   }
   if (question.type === 'multipleChoice') {
+    if (showMutipleErrorContent.value) {
+      return false
+    }
     console.log('answer[question.questionId]?.selectedOptions', answer[question.questionId]?.selectedOptions)
     return !isEmpty(answer[question.questionId]?.selectedOptions)
   }
-  // Boolean(answer[question.questionId].text)：这个表达式会将 text 转换为布尔值。它会返回 true 当 text 是一个非空字符串，并返回 false 当 text 是 null、undefined 或者空字符串。
   if (question.type === 'singleStringText') {
     console.log('answer[question.questionId].text', answer[question.questionId].text)
     return !isEmpty(answer[question.questionId].text)
@@ -376,6 +433,7 @@ function handleSelectOption(option: Option) {
   showErrorContent.value = false
 }
 
+// 多选报错显示  超出最多
 const showMutipleErrorContent = ref(false)
 // 多选 选中状态绑定
 function handleMutipleBind(option: Option) {
@@ -604,7 +662,7 @@ function handleEndQuiz() {
                   </label>
                 </view>
                 <view
-                  v-if="showErrorContent"
+                  v-if="showMutipleErrorContent"
                   class="flex color-red"
                 >
                   <view class="icon-small-wrp">
@@ -615,7 +673,7 @@ function handleEndQuiz() {
                     />
                   </view>
                   <view class="ml-2">
-                    {{ t('required') }}
+                    {{ t('maxChoice_head') }}{{ currentQuestion.maxSelection }}{{ t('maxChoice_tail') }}
                   </view>
                 </view>
               </view>
@@ -629,21 +687,6 @@ function handleEndQuiz() {
                 <text class="text-18PX">
                   {{ shownQuestionNumber }}.{{ currentQuestion.content }}
                 </text>
-                <!-- <view relative>
-              <input
-                type="text"
-                :value="tempAnswers[currentQuestionId].text"
-                :maxlength="currentQuestion.maxLength"
-                class="relative mt-5 border-b-3PX border-[#f0f0f0] rounded border-b-solid p-2"
-                @focus="handleInputFocus"
-                @blur="handleInputBlur"
-                @input="handleTextChange"
-              >
-              <view
-                :class="isInputFocus ? 'scale-x-100' : 'scale-x-0'"
-                class="absolute bottom-0 left-0 h-3PX w-full origin-center bg-oceanBlue transition-transform duration-300"
-              />
-            </view> -->
                 <AnimatedInput
                   class="mt-5"
                   type="text"
@@ -1029,3 +1072,4 @@ radio {
   font-size: 18PX !important
 }
 </style>
+}

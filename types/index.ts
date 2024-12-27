@@ -30,12 +30,18 @@ interface MultipleChoiceQuestion extends BaseQuestion {
 interface SingleStringTextQuestion extends BaseQuestion {
   type: 'singleStringText'
   maxLength?: number
+  IncludeBounds?: number
+  min?: number
+  max?: number
 }
 
 // 多行字符串文本题接口
 interface MultipleStringTextQuestion extends BaseQuestion {
   type: 'multipleStringText'
   maxLength?: number
+  IncludeBounds?: number
+  min?: number
+  max?: number
 }
 
 // 数字文本接口
@@ -43,6 +49,7 @@ interface NumberTextQuestion extends BaseQuestion {
   type: 'numberText'
   min?: number
   max?: number
+  IncludeBounds?: number
 }
 
 // 字符串文本网格
