@@ -55,7 +55,6 @@ function textWithinLimits(answer: string) {
 
   const textLength = answer.length
   const { result, reason } = checkBounds(textLength, props.min, props.max, props.includeBounds, props.type || '')
-  console.log('textWithinLimits', textLength, props.min, props.max, props.includeBounds, props.type, result, reason)
   if (!result) {
     handleErrorContent(reason, textLength.toString(), props.min.toString(), props.max.toString())
   }

@@ -71,7 +71,7 @@ export function postQuestionDetail({ id, roleId, fnUid, zoneId }: { id: number, 
     requestData.roleId = roleId
   if (fnUid !== undefined)
     requestData.fnUid = fnUid
-  if (zoneId !== undefined)
+  if (zoneId !== undefined && !Number.isNaN(zoneId))
     requestData.zoneId = zoneId
 
   return Taro.request({
@@ -106,7 +106,7 @@ export function submitAnswer({ id, answer, roleId, fnUid, zoneId }: { id: number
     requestData.roleId = roleId
   if (fnUid !== undefined)
     requestData.fnUid = fnUid
-  if (zoneId !== undefined)
+  if (zoneId !== undefined && !Number.isNaN(zoneId))
     requestData.zoneId = zoneId
 
   return Taro.request({
@@ -116,17 +116,6 @@ export function submitAnswer({ id, answer, roleId, fnUid, zoneId }: { id: number
       'Content-Type': 'application/x-www-form-urlencoded', // 设置请求头
     },
     data: requestData, // 动态构建的请求数据
-  }).then((response) => {
-    const { data } = response
-    // 处理返回的数据
-    if (data.code === 0) {
-      // 成功处理
-      return data.data // 返回处理后的数据
-    }
-    else {
-      // 处理错误
-      throw new Error(data.msg || 'Unknown error')
-    }
   })
 }
 

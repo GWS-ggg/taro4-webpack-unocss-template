@@ -30,7 +30,8 @@
     "dev:jd": "npm run build:jd -- --watch",
     "dev:harmony-hybrid": "npm run build:harmony-hybrid -- --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "post:h5": "taro build --type h5 && post-build-regist D:/WorkCode/公司项目/new/frontend/web/gamePreRegister/.output/public html/gameReserve"
   },
   "browserslist": [
     "defaults and fully supports es6-module",

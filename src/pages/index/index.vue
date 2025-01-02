@@ -39,10 +39,12 @@ async function getQuestionDetail() {
   try {
     const res = await postQuestionDetail({ id: Number(queryParams.id), roleId: queryParams.roleId, fnUid: queryParams.fnUid, zoneId: Number(queryParams.zoneId) })
     surveyData.value = res as SurveyData
-    Taro.setNavigationBarTitle({
-      title: surveyData.value?.title || '',
-    })
-    console.log('surveyData', res)
+    console.log('surveyData', surveyData.value)
+    if (surveyData.value.title) {
+      Taro.setNavigationBarTitle({
+        title: surveyData.value?.title,
+      })
+    }
   }
   catch (error) {
     console.log('error', error)
@@ -53,7 +55,7 @@ async function getQuestionDetail() {
 <template>
   <view class="h-full w-full f-c bg-[rgb(217,242,253)]">
     <view
-      v-if="surveyData"
+      v-if="surveyData?.questions && surveyData.questions.length > 0"
       class="mx-auto h-[100vh] max-w-750PX w-[90%] flex-col bg-[rgb(217,242,253)] p-5 text-[18PX]"
       lg="w-750PX"
     >

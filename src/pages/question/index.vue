@@ -52,6 +52,7 @@ const questionTypeMap = {
   8: 'multipleChoiceGrid', // 矩阵多选
 }
 const queryParams = ref()
+// surveyData.value = surveyDataJson as SurveyData
 // TODO 缓存中取答案
 onMounted(async () => {
   queryParams.value = Taro.getStorageSync('queryParams')
@@ -61,9 +62,11 @@ onMounted(async () => {
     const res = await postQuestionDetail({ id: Number(queryParams.value.id), roleId: queryParams.value.roleId, fnUid: queryParams.value.fnUid, zoneId: Number(queryParams.value.zoneId) })
     surveyData.value = res
     // 设置标题
-    Taro.setNavigationBarTitle({
-      title: surveyData.value?.title || '',
-    })
+    if (surveyData.value?.title) {
+      Taro.setNavigationBarTitle({
+        title: surveyData.value?.title || '',
+      })
+    }
     console.log('surveyData', res)
   }
   catch (error) {
@@ -106,6 +109,7 @@ const isLastQuestion = computed(() => {
 
 // 判断该题是否需要显示 根据  conditions是否为null  operator 0/1 and/or
 function shouldShowQuestion(question: Question) {
+  console.log('shouldShowQuestion', question)
   if (!question || !question.conditions) {
     return true
   }
@@ -157,10 +161,20 @@ function isAllFilled(question: Question, answer: TempAnswers) {
     return !isEmpty(answer[question.id].text)
   }
   if (question.type === 'stringTextGrid') {
-    return question.questions.every(row => !isEmpty(answer[question.id][row.id]))
+    return question.questions.every((row) => {
+      if (!shouldShowQuestion(row)) {
+        return true
+      }
+      return !isEmpty(answer[question.id][row.id])
+    })
   }
   if (question.type === 'numberTextGrid') {
-    return question.questions.every(row => !isEmpty(answer[question.id][row.id]))
+    return question.questions.every((row) => {
+      if (!shouldShowQuestion(row)) {
+        return true
+      }
+      return !isEmpty(answer[question.id][row.id])
+    })
   }
   if (question.type === 'singleChoiceGrid') {
     return question.questions.every(row => !isEmpty(answer[question.id]?.singleChoiceGrid?.[row.id]?.id))
@@ -327,9 +341,15 @@ function handleNextQuestion() {
       // 标记 完成答题
       if (cacheData.value) {
         cacheData.value.completed = true
+        console.log('cacheData.value completed', cacheData.value)
         Taro.setStorageSync(`${surveyData.value?.survey_id}_${queryParams.value.roleId}_cacheData`, cacheData.value)
       }
-      submitAnswer({ id: queryParams.value.id, answer: JSON.stringify(finalAnswers.value), fnUid: queryParams.value.fnUid, roleId: queryParams.value.roleId, zoneId: queryParams.value.zoneId })
+      try {
+        submitAnswer({ id: Number(queryParams.value.id), answer: JSON.stringify(finalAnswers.value), fnUid: queryParams.value.fnUid, roleId: queryParams.value.roleId, zoneId: Number(queryParams.value.zoneId) })
+      }
+      catch (error) {
+        console.log('submitAnswer error', error)
+      }
       // 保存进度并关闭问卷 跳转页面
       console.log('Survey closed tempAnswers', tempAnswers.value)
       console.log('Survey closed, finalAnswers:', finalAnswers.value)
@@ -342,6 +362,7 @@ function handleNextQuestion() {
     shownQuestionNumber: shownQuestionNumber.value,
     tempAnswers: tempAnswers.value,
     finalAnswers: [...finalAnswers.value],
+    completed: cacheData.value?.completed || false,
   })
   console.log('set cacheData', cacheData.value)
   Taro.setStorageSync(`${surveyData.value?.survey_id}_${queryParams.value.roleId}_cacheData`, cacheData.value)
@@ -440,7 +461,12 @@ function closeSurvey() {
     Taro.setStorageSync(`${surveyData.value?.survey_id}_${queryParams.value.roleId}_cacheData`, cacheData.value)
   }
 
-  submitAnswer({ id: Number(queryParams.value.id), answer: JSON.stringify(finalAnswers.value), fnUid: queryParams.value.fnUid, roleId: queryParams.value.roleId, zoneId: Number(queryParams.value.zoneId) })
+  try {
+    submitAnswer({ id: Number(queryParams.value.id), answer: JSON.stringify(finalAnswers.value), fnUid: queryParams.value.fnUid, roleId: queryParams.value.roleId, zoneId: Number(queryParams.value.zoneId) })
+  }
+  catch (error) {
+    console.log('submitAnswer error', error)
+  }
   // 保存进度并关闭问卷
   console.log('Survey closed tempAnswers', tempAnswers.value)
   console.log('Survey closed, finalAnswers:', finalAnswers.value)
@@ -541,6 +567,7 @@ const progressPercentage = computed(() => {
 <template>
   <view class="h-full w-full flex items-center justify-center bg-[rgb(217,242,253)]">
     <view
+      v-if="surveyData?.questions && surveyData.questions.length > 0"
       class="mx-auto h-[100vh] max-w-750PX w-[90%] flex-col bg-[rgb(217,242,253)] p-5 text-[18PX]"
       lg="w-750PX"
     >
@@ -936,6 +963,17 @@ const progressPercentage = computed(() => {
           <view class="f-c">
             {{ t('thankYou') }}
           </view>
+        </view>
+      </view>
+    </view>
+    <view
+      v-if="!surveyData?.questions || surveyData.questions.length === 0"
+      class="mx-auto h-[100vh] max-w-750PX w-[90%] flex-col bg-[rgb(217,242,253)] p-5 text-[18PX]"
+      lg="w-750PX"
+    >
+      <view class="mt-2 flex flex-col bg-[#fff] p-5">
+        <view class="f-c">
+          {{ t('surveyNotFound') }}
         </view>
       </view>
     </view>
