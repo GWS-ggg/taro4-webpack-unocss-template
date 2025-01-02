@@ -3,7 +3,7 @@ import en from './lang/en'
 import zhCN from './lang/zh-cn'
 
 const messages = {
-  'zh-CN': zhCN,
+  'zh-cn': zhCN,
   en,
 }
 
